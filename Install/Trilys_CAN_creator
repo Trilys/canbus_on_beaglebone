@@ -1,0 +1,119 @@
+#! /bin/bash
+# Create a CAN (or virtual CAN) network. Could be seen with `ifconfig` command. CAN0 is on PIN 24 and 26
+
+#Bash Initialisation
+letters='[a-zA-Z]'
+numbers='[0-9]'
+
+#no argument
+if [ "$#" = 0 ]; then
+	echo -n "Do you want to create a CAN (Y/n) : "
+	read createCAN
+	if [ "$createCAN" != "n" ] && [ "$createCAN" != "N" ]; then
+		echo -n "What number for the CAN bus (Default = 0):"
+		read numCAN
+		if [ -z "$numCAN" ]; then
+		# numCAN = null
+			numCAN=0
+		fi
+		echo -n "Enter your bitrate for CAN$numCAN (default = 125000) : "
+		read bitrate
+		if [[ "$bitrate" =~ $numbers ]]; then
+			echo "Creating CAN$numCAN at $bitrate bps..."
+		else
+			bitrate=125000
+			echo "Creating CAN$numCAN at $bitrate bps..."
+		fi
+	fi
+	echo -n "Do you want to create a virtual CAN (Y/n) : "
+	read createVCAN
+	if [ "$createVCAN" != "n" ] && [ "$createVCAN" != "N" ]; then
+		echo -n "What number for the virtual CAN bus (Default = 0) :"
+		read numVCAN
+		if [ -z "$numVCAN" ]; then
+		# numCAN = null
+			numVCAN=0
+		fi
+	fi
+#arguments
+else
+	createCAN=n
+	createVCAN=n
+	bitrate=125000
+	#Get arguments if present in terminal
+	while [[ $# > 0 ]]
+	do
+		key="$1"
+		case $key in
+			-c|--can)
+				createCAN=y
+				numCAN="$2"
+				shift # past argument
+			;;
+			-b|--bcan)
+				createCAN=y
+				bitrate="$2"
+				shift # past argument
+			;;
+			-vc|--vcan)
+				createVCAN=y
+				numVCAN="$2"
+				shift # past argument
+			;;
+			-l|--launch)
+				createCAN=y
+				numCAN=0
+				bitrate=125000
+			;;
+			*)
+				echo "Utilisation :"
+				echo -e "\t -c | --can + number of CAN"
+				echo -e "\t\t + -b | --bcan + bitrate of CAN (Default = 125000)"
+				echo -e "\t -vc | --vcan + number of virtual CAN"
+				echo -e "\t -l | --launch : Launch CAN0 with default settings"
+				echo -e "\t -h | --help : This help"
+				echo -e "Exemple :"
+				echo -e "\t CAN_creator -c 0 -b 250000 -vc 1 will create a CAN0 at 250kpbs and a VCAN1"
+				exit 10
+			;;
+			*)
+			;;
+		esac
+		shift # past argument or value
+	done
+fi
+
+if [ "$createCAN" != "n" ] && [ "$createCAN" != "N" ]; then
+	if [ "$numCAN" -eq 0 ]; then 
+		is_canCreated=`cat /sys/devices/platform/bone_capemgr/slots | grep BB-DCAN0`
+		if [ -z "$is_canCreated" ]; then
+			sudo su -c "echo BB-DCAN0 > /sys/devices/platform/bone_capemgr/slots"
+		fi
+	elif [ "$numCAN" -eq 1 ]; then
+		is_canCreated=`cat /sys/devices/platform/bone_capemgr/slots | grep BB-DCAN0`
+		if [ -z "$is_canCreated" ]; then
+			sudo su -c "echo BB-DCAN0 > /sys/devices/platform/bone_capemgr/slots"
+		fi
+		is_canCreated=`cat /sys/devices/platform/bone_capemgr/slots | grep BB-DCAN1`
+			if [ -z "$is_canCreated" ]; then
+				sudo su -c "echo BB-DCAN1 > /sys/devices/platform/bone_capemgr/slots"
+			fi
+	fi
+	sudo modprobe can
+	sudo modprobe can-dev
+	sudo modprobe can-raw
+	sudo ifconfig can$numCAN down
+	sudo ip link set can$numCAN up type can bitrate $bitrate
+	sudo ifconfig can$numCAN up
+	echo "can$numCAN created!!!"
+fi
+
+if [ "$createVCAN" != "n" ] && [ "$createVCAN" != "N" ]; then
+	sudo modprobe vcan
+	sudo ip link add dev vcan$numVCAN type vcan
+	sudo ip link set vcan$numVCAN up
+	echo "vcan$numVCAN created!!!"
+fi
+
+exit 0
+
