@@ -24,6 +24,8 @@ sudo mv BB-DCAN0-00A0.dtbo /lib/firmware
 dtc -O dtb -o BB-DCAN1-00A0.dtbo -b 0 -@ BB-DCAN1-00A0.dts
 sudo mv BB-DCAN1-00A0.dtbo /lib/firmware
 echo "CAN0 and CAN1 installed."
+sudo cp Trilys_CAN_creator /usr/local/bin/
+echo "Trilys_CAN_creator installed."
 
 echo "To launch them, launch Trilys_CAN_creator."
 
