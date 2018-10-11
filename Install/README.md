@@ -7,7 +7,8 @@ Installation
 To install CAN0 and CAN1 on beaglebone :
 
     cd Install
-    chmod +x *.sh
+    chmod +x install.sh
+    chmod +x Trilys_CAN_creator
     sudo ./install.sh
 
 Then to create CAN0 at 500kbps :
